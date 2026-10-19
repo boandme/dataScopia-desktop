@@ -1,0 +1,65 @@
+name: Build Windows desktop app
+
+# Pulls the app's source fresh from the main repo (boandme/kaggle_datasetAnalysis, which also runs
+# the hosted web version via Render) on every run, builds the standalone Windows app from it, and
+# attaches it to a GitHub Release on THIS repo whenever a version tag is pushed here - e.g.
+# `git tag v1.0 && git push origin v1.0`. There is deliberately no copy of the app's source in
+# this repo to keep in sync - whatever is on the main repo's main branch is what gets built.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: "Branch/tag/commit of boandme/kaggle_datasetAnalysis to build from"
+        default: "main"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Check out this repo (packaging config)
+        uses: actions/checkout@v4
+
+      - name: Check out the app's source
+        uses: actions/checkout@v4
+        with:
+          repository: boandme/kaggle_datasetAnalysis
+          ref: ${{ inputs.source_ref || 'main' }}
+          path: source
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r source/requirements.txt pyinstaller>=6.22.0
+
+      - name: Build with PyInstaller
+        run: pyinstaller packaging/datascopia.spec --clean --distpath dist_desktop --workpath build_desktop -y
+        env:
+          DATASCOPIA_SOURCE: ${{ github.workspace }}\source
+
+      - name: Zip the build
+        run: Compress-Archive -Path dist_desktop/DataScopia -DestinationPath DataScopia-windows.zip
+
+      - name: Attach to the release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: DataScopia-windows.zip
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        with:
+          name: DataScopia-windows
+          path: DataScopia-windows.zip

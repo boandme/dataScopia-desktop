@@ -1,0 +1,6 @@
+source/
+dist_desktop/
+build_desktop/
+*.zip
+__pycache__/
+*.pyc
