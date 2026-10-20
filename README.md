@@ -1,5 +1,10 @@
 # DataScopia for Windows
 
+[![Latest release](https://img.shields.io/github/v/release/boandme/dataScopia-desktop?label=latest%20release)](https://github.com/boandme/dataScopia-desktop/releases/latest)
+[![Build status](https://github.com/boandme/dataScopia-desktop/actions/workflows/build.yml/badge.svg)](https://github.com/boandme/dataScopia-desktop/actions/workflows/build.yml)
+
+**[Download the latest DataScopia-windows.zip](https://github.com/boandme/dataScopia-desktop/releases/latest)**
+
 Standalone Windows build of [DataScopia](https://github.com/boandme/dataScopia), a
 research-focused open-source platform for exploring, analyzing, and understanding datasets from
 Kaggle and Hugging Face with the help of intelligent automated analysis, interactive
@@ -13,7 +18,7 @@ app. There's no copy of the app's source here to fall out of sync - whatever's o
 
 ## Download
 
-Grab the latest `DataScopia-windows.zip` from [Releases](../../releases), unzip it anywhere, and
+Grab the latest `DataScopia-windows.zip` from [the latest release](https://github.com/boandme/dataScopia-desktop/releases/latest), unzip it anywhere, and
 run `DataScopia.exe`. It starts a local server and opens the app in your browser - no install step,
 no admin rights needed. Your data (accounts, saved projects) is stored in
 `%LOCALAPPDATA%\DataScopia`, not inside the app folder, so moving or deleting the unzipped folder
