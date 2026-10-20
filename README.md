@@ -1,6 +1,6 @@
 # DataScopia for Windows
 
-Standalone Windows build of [DataScopia](https://github.com/boandme/kaggle_datasetAnalysis), a
+Standalone Windows build of [DataScopia](https://github.com/boandme/dataScopia), a
 research-focused open-source platform for exploring, analyzing, and understanding datasets from
 Kaggle and Hugging Face with the help of intelligent automated analysis, interactive
 visualizations, and an AI-assisted research workflow. See that repo for the full feature list,
@@ -32,9 +32,9 @@ KAGGLE_KEY=your_kaggle_api_key
 ## Building it yourself
 
 ```powershell
-git clone https://github.com/<your-username>/datascopia-desktop.git
-cd datascopia-desktop
-git clone https://github.com/boandme/kaggle_datasetAnalysis.git source
+git clone https://github.com/boandme/dataScopia-desktop.git
+cd dataScopia-desktop
+git clone https://github.com/boandme/dataScopia.git source
 pip install -r source/requirements.txt pyinstaller>=6.22.0
 pyinstaller packaging/datascopia.spec --clean
 ```

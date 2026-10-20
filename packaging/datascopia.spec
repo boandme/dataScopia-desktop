@@ -1,7 +1,7 @@
 # PyInstaller spec for the standalone Windows build of DataScopia.
 #
 # This repo (datascopia-desktop) deliberately does NOT hold a copy of the app's source - that
-# lives in the main repo (https://github.com/boandme/kaggle_datasetAnalysis), which also runs the
+# lives in the main repo (https://github.com/boandme/dataScopia), which also runs the
 # hosted web version via Render. This repo pulls that source in fresh at build time (see
 # .github/workflows/build.yml, which checks it out to ./source before running PyInstaller), so a
 # fix merged there is already in the next desktop build with nothing to manually re-sync.

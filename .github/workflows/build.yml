@@ -1,8 +1,8 @@
 name: Build Windows desktop app
 
-# Pulls the app's source fresh from the main repo (boandme/kaggle_datasetAnalysis, which also runs
-# the hosted web version via Render) on every run, builds the standalone Windows app from it, and
-# attaches it to a GitHub Release on THIS repo whenever a version tag is pushed here - e.g.
+# Pulls the app's source fresh from the main repo (boandme/dataScopia, which also runs the hosted
+# web version via Render) on every run, builds the standalone Windows app from it, and attaches
+# it to a GitHub Release on THIS repo whenever a version tag is pushed here - e.g.
 # `git tag v1.0 && git push origin v1.0`. There is deliberately no copy of the app's source in
 # this repo to keep in sync - whatever is on the main repo's main branch is what gets built.
 
@@ -30,7 +30,7 @@ jobs:
       - name: Check out the app's source
         uses: actions/checkout@v4
         with:
-          repository: boandme/kaggle_datasetAnalysis
+          repository: boandme/dataScopia
           ref: ${{ inputs.source_ref || 'main' }}
           path: source
 
