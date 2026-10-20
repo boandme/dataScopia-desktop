@@ -19,10 +19,14 @@ app. There's no copy of the app's source here to fall out of sync - whatever's o
 ## Download
 
 Grab the latest `DataScopia-windows.zip` from [the latest release](https://github.com/boandme/dataScopia-desktop/releases/latest), unzip it anywhere, and
-run `DataScopia.exe`. It starts a local server and opens the app in your browser - no install step,
-no admin rights needed. Your data (accounts, saved projects) is stored in
-`%LOCALAPPDATA%\DataScopia`, not inside the app folder, so moving or deleting the unzipped folder
-never touches it.
+run `DataScopia.exe`. It opens as its own app window - not a browser tab - with its own taskbar
+entry and icon; closing it quits it. No install step, no admin rights needed. Your data (accounts,
+saved projects) is stored in `%LOCALAPPDATA%\DataScopia`, not inside the app folder, so moving or
+deleting the unzipped folder never touches it.
+
+The app window itself is rendered with the WebView2 runtime, which Windows 10/11 ships with by
+default - if your machine somehow doesn't have it (rare, mostly older locked-down setups), DataScopia
+will tell you on startup; get it from [Microsoft's WebView2 page](https://developer.microsoft.com/microsoft-edge/webview2/) if so.
 
 Kaggle search/analyze needs a Kaggle API token to work (Hugging Face, file upload, and the demo
 dataset work with no setup at all): drop a `.env` file next to `DataScopia.exe` containing
@@ -40,7 +44,7 @@ KAGGLE_KEY=your_kaggle_api_key
 git clone https://github.com/boandme/dataScopia-desktop.git
 cd dataScopia-desktop
 git clone https://github.com/boandme/dataScopia.git source
-pip install -r source/requirements.txt pyinstaller>=6.22.0
+pip install -r source/requirements.txt -r source/requirements-desktop.txt pyinstaller>=6.22.0
 pyinstaller packaging/datascopia.spec --clean
 ```
 

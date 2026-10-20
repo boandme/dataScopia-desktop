@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       source_ref:
-        description: "Branch/tag/commit of boandme/kaggle_datasetAnalysis to build from"
+        description: "Branch/tag/commit of boandme/dataScopia to build from"
         default: "main"
         required: false
 
@@ -41,7 +41,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r source/requirements.txt pyinstaller>=6.22.0
+          pip install -r source/requirements.txt -r source/requirements-desktop.txt pyinstaller>=6.22.0
 
       - name: Build with PyInstaller
         run: pyinstaller packaging/datascopia.spec --clean --distpath dist_desktop --workpath build_desktop -y

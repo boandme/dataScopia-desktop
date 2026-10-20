@@ -11,6 +11,14 @@
 #   pyinstaller packaging/datascopia.spec --clean
 # Output lands in dist_desktop/DataScopia/ (DataScopia.exe plus its _internal support files).
 #
+# The entry point is desktop_app.py, not run.py: run.py opens the app in the system's default
+# browser (the right behavior for `python run.py` from source), but a packaged app should feel
+# like an app - its own window, its own icon and taskbar entry, closing it actually quits it -
+# not a terminal window sitting behind a browser tab. desktop_app.py shows the same server in a
+# native window via pywebview (using the WebView2 runtime Windows 10/11 ships with by default) -
+# this is why requirements-desktop.txt (from the source checkout) is installed in addition to
+# requirements.txt, on top of what the hosted web deployment needs.
+#
 # Why this looks more involved than a typical PyInstaller spec: the source's run.py and wsgi.py
 # load apps/api/app/main.py by reading its actual file from disk at startup (importlib's
 # spec_from_file_location), not via a plain `import main` - a deliberate convention in that repo
@@ -66,7 +74,7 @@ datas = [
 ]
 
 a = Analysis(
-    [str(PROJECT_ROOT / "run.py")],
+    [str(PROJECT_ROOT / "desktop_app.py")],
     pathex=[
         str(PROJECT_ROOT),
         str(PROJECT_ROOT / "apps" / "api" / "app"),
@@ -93,7 +101,9 @@ exe = EXE(
     debug=False,
     strip=False,
     upx=False,
-    console=True,  # shows "DataScopia is running at http://..." and any startup errors
+    console=False,  # a real windowed app, not a terminal window behind the app window -
+                     # desktop_app.py shows a message box instead if startup itself fails
+    icon=str(Path(SPECPATH).resolve() / "datascopia.ico"),  # this repo's own icon, not the source checkout's
 )
 
 coll = COLLECT(
