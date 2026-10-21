@@ -51,6 +51,43 @@ jobs:
       - name: Zip the build
         run: Compress-Archive -Path dist_desktop/DataScopia -DestinationPath DataScopia-windows.zip
 
+      - name: Smoke test (as a real downloaded-and-extracted copy, on a clean runner)
+        shell: pwsh
+        run: |
+          # This is what actually caught the "Failed to resolve Python.Runtime.Loader.Initialize"
+          # bug (v1.1): that only ever reproduced from a genuinely downloaded-and-extracted copy,
+          # never from a build run in place - because Windows tags files extracted from a
+          # downloaded ZIP with "Mark of the Web", and that's what broke pythonnet's assembly
+          # loading. Testing the raw dist_desktop/ folder wouldn't catch that class of bug again;
+          # this reproduces the real condition every time, on a fresh runner with no dev tools
+          # installed (unlike a developer's own machine, which can mask this exact failure).
+          Set-Content -Path "DataScopia-windows.zip:Zone.Identifier" -Value "[ZoneTransfer]`r`nZoneId=3" -Encoding ASCII
+          $extractDir = "smoketest_extract"
+          Expand-Archive -Path DataScopia-windows.zip -DestinationPath $extractDir
+          Get-ChildItem -Path $extractDir -Recurse -File | ForEach-Object {
+            Set-Content -Path "$($_.FullName):Zone.Identifier" -Value "[ZoneTransfer]`r`nZoneId=3" -Encoding ASCII
+          }
+
+          $proc = Start-Process -FilePath "$extractDir\DataScopia\DataScopia.exe" -PassThru
+          Start-Sleep -Seconds 15
+          if ($proc.HasExited) {
+            Write-Error "DataScopia.exe exited on startup (exit code $($proc.ExitCode)) - see the job summary above for what changed since the last working release."
+            exit 1
+          }
+          try {
+            $response = Invoke-WebRequest -Uri "http://127.0.0.1:8000/datasets/demo" -UseBasicParsing -TimeoutSec 10
+            if ($response.StatusCode -ne 200) {
+              Write-Error "Server responded with unexpected status $($response.StatusCode)"
+              exit 1
+            }
+            Write-Output "Smoke test passed: DataScopia.exe started from a downloaded-and-extracted copy and served the demo dataset."
+          } catch {
+            Write-Error "Server on port 8000 never responded: $_"
+            exit 1
+          } finally {
+            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+          }
+
       - name: Attach to the release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
