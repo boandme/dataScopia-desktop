@@ -9,7 +9,8 @@
 # Build with (from this repo's root), after checking out the main repo's source to ./source
 # (or point DATASCOPIA_SOURCE at wherever you checked it out instead):
 #   pyinstaller packaging/datascopia.spec --clean
-# Output lands in dist_desktop/DataScopia/ (DataScopia.exe plus its _internal support files).
+# Output lands in dist_desktop/DataScopia/ (DataScopia.exe plus its support files, all flat in
+# this one folder - see contents_directory below for why this isn't the usual _internal/ split).
 #
 # The entry point is desktop_app.py, not run.py: run.py opens the app in the system's default
 # browser (the right behavior for `python run.py` from source), but a packaged app should feel
@@ -71,6 +72,13 @@ hiddenimports = ["main"] + collect_submodules("analysis") + collect_submodules("
 datas = [
     (str(PROJECT_ROOT / "apps" / "web"), "apps/web"),
     (str(PROJECT_ROOT / "apps" / "api" / "app"), "apps/api/app"),
+    # .NET Framework refuses to fully load Python.Runtime.dll (pywebview's Windows backend needs
+    # it) once the build has been downloaded and extracted from a ZIP - Windows tags every
+    # extracted file with "Mark of the Web", and .NET treats that as an untrusted remote source
+    # unless told otherwise here. Reproduced and confirmed against a real zipped-and-extracted
+    # build; see the comment in DataScopia.exe.config itself. Must sit next to DataScopia.exe
+    # (not in a subfolder), which is why contents_directory="." is also set below.
+    (str(Path(SPECPATH).resolve() / "DataScopia.exe.config"), "."),
 ]
 
 a = Analysis(
@@ -104,6 +112,12 @@ exe = EXE(
     console=False,  # a real windowed app, not a terminal window behind the app window -
                      # desktop_app.py shows a message box instead if startup itself fails
     icon=str(Path(SPECPATH).resolve() / "datascopia.ico"),  # this repo's own icon, not the source checkout's
+    # Disables PyInstaller 6+'s default _internal/ subfolder, putting every support file flatly
+    # next to DataScopia.exe instead - required so DataScopia.exe.config (above) actually sits
+    # where .NET Framework looks for it (an .exe's config file must be a sibling of the .exe
+    # itself, never in a subfolder). This belongs on EXE, not COLLECT - passing it to COLLECT
+    # instead is a silent no-op (no error, just the default _internal layout again).
+    contents_directory=".",
 )
 
 coll = COLLECT(
