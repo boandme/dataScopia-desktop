@@ -52,7 +52,11 @@ jobs:
         run: Compress-Archive -Path dist_desktop/DataScopia -DestinationPath DataScopia-windows.zip
 
       - name: Smoke test (as a real downloaded-and-extracted copy, on a clean runner)
-        shell: pwsh
+        # Pinned to Windows PowerShell 5.1 (not pwsh, the Windows-runner default for an unmarked
+        # `run:` step) because that's the only shell this script has actually been run against,
+        # end to end, including the fix below - pwsh isn't installed on the machine this was
+        # developed on, so there's no way to have verified it behaves identically here.
+        shell: powershell
         run: |
           # This is what actually caught the "Failed to resolve Python.Runtime.Loader.Initialize"
           # bug (v1.1): that only ever reproduced from a genuinely downloaded-and-extracted copy,
@@ -61,14 +65,30 @@ jobs:
           # loading. Testing the raw dist_desktop/ folder wouldn't catch that class of bug again;
           # this reproduces the real condition every time, on a fresh runner with no dev tools
           # installed (unlike a developer's own machine, which can mask this exact failure).
-          Set-Content -Path "DataScopia-windows.zip:Zone.Identifier" -Value "[ZoneTransfer]`r`nZoneId=3" -Encoding ASCII
+          #
+          # v1.3 failed here: Set-Content against an NTFS alternate-data-stream path only accepts
+          # -Encoding when the path is absolute - a RELATIVE ADS path silently resolves to a
+          # different parameter set that lacks it ("A parameter cannot be found that matches
+          # parameter name 'Encoding'"), confirmed by isolating it directly (four side-by-side
+          # variants, changing only relative-vs-absolute and backtick-escaping) rather than
+          # guessed from the error text alone. Resolve-Path makes the zip's path absolute first;
+          # the per-file loop below was already fine, since Get-ChildItem's .FullName is always
+          # absolute.
+          $zipPath = (Resolve-Path "DataScopia-windows.zip").Path
+          Set-Content -Path "${zipPath}:Zone.Identifier" -Value "[ZoneTransfer]`r`nZoneId=3" -Encoding ASCII
           $extractDir = "smoketest_extract"
           Expand-Archive -Path DataScopia-windows.zip -DestinationPath $extractDir
           Get-ChildItem -Path $extractDir -Recurse -File | ForEach-Object {
             Set-Content -Path "$($_.FullName):Zone.Identifier" -Value "[ZoneTransfer]`r`nZoneId=3" -Encoding ASCII
           }
 
-          $proc = Start-Process -FilePath "$extractDir\DataScopia\DataScopia.exe" -PassThru
+          # -RedirectStandardOutput/-Error is also what keeps this a non-interactive launch:
+          # without it, Start-Process goes through ShellExecute, which for a Mark-of-the-Web file
+          # means Windows' "Open File - Security Warning" dialog - harmless for a real person
+          # double-clicking the exe (an expected one-time click for any unsigned download), but
+          # it would hang this step forever waiting for a click nobody's there to give. Confirmed
+          # locally: the exact same Start-Process call, without this, blocked on that dialog.
+          $proc = Start-Process -FilePath "$extractDir\DataScopia\DataScopia.exe" -PassThru -RedirectStandardOutput "exe_stdout.log" -RedirectStandardError "exe_stderr.log"
           Start-Sleep -Seconds 15
           if ($proc.HasExited) {
             Write-Error "DataScopia.exe exited on startup (exit code $($proc.ExitCode)) - see the job summary above for what changed since the last working release."
