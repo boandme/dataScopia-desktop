@@ -112,6 +112,7 @@ exe = EXE(
     console=False,  # a real windowed app, not a terminal window behind the app window -
                      # desktop_app.py shows a message box instead if startup itself fails
     icon=str(Path(SPECPATH).resolve() / "datascopia.ico"),  # this repo's own icon, not the source checkout's
+    version=str(Path(SPECPATH).resolve() / "version_info.txt"),  # Properties > Details metadata
     # Disables PyInstaller 6+'s default _internal/ subfolder, putting every support file flatly
     # next to DataScopia.exe instead - required so DataScopia.exe.config (above) actually sits
     # where .NET Framework looks for it (an .exe's config file must be a sibling of the .exe
