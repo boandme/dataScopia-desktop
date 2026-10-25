@@ -64,10 +64,24 @@ if not (PROJECT_ROOT / "run.py").exists():
 # enormous), bloating the build for nothing actually used at runtime. Once "main" is a hidden
 # import, PyInstaller's analyzer reaches every one of those real import statements on its own and
 # applies pyinstaller-hooks-contrib's existing, already-tuned hooks for each library - no manual
-# override needed. (kaggle/kagglehub are in the source repo's requirements.txt but never actually
-# imported as Python modules anywhere in the app - dataset/kaggle_search.py talks to Kaggle's REST
-# API directly via requests - so they're correctly excluded entirely rather than bundled for nothing.)
-hiddenimports = ["main"] + collect_submodules("analysis") + collect_submodules("dataset")
+# override needed.
+#
+# kaggle/kagglehub are the one real exception: v1.4's "no module named 'kaggle'" bug happened
+# because an earlier pass concluded they were never imported anywhere, based on a grep for
+# top-level `import kaggle` statements only - which missed that dataset/kaggle_search.py imports
+# both of them *inside* functions (`from kaggle import KaggleApi` inside search_kaggle_datasets,
+# `import kagglehub` inside download_kaggle_dataset), invisible to that grep's anchoring and,
+# worse, invisible to PyInstaller's own static analysis too, which only sees imports reachable
+# from a script it's actually told to analyze - a function-local import it never calls into
+# doesn't count. Explicitly naming them as hiddenimports is what makes PyInstaller analyze them
+# at all, the same reason "main" needs to be named below.
+hiddenimports = (
+    ["main"]
+    + collect_submodules("analysis")
+    + collect_submodules("dataset")
+    + collect_submodules("kaggle")
+    + collect_submodules("kagglehub")
+)
 
 datas = [
     (str(PROJECT_ROOT / "apps" / "web"), "apps/web"),
@@ -95,7 +109,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=["kaggle", "kagglehub"],
+    excludes=[],
     noarchive=False,
 )
 pyz = PYZ(a.pure)
