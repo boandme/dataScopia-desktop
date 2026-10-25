@@ -36,7 +36,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from PyInstaller.utils.hooks import collect_submodules
+from PyInstaller.utils.hooks import collect_submodules, copy_metadata
 
 # SPECPATH is injected by PyInstaller into the spec file's exec namespace (there's no __file__
 # here - the spec isn't run as a normal module import). DATASCOPIA_SOURCE overrides where the
@@ -94,6 +94,19 @@ datas = [
     # (not in a subfolder), which is why contents_directory="." is also set below.
     (str(Path(SPECPATH).resolve() / "DataScopia.exe.config"), "."),
 ]
+
+# v1.4.5 shipped with "No package metadata was found for werkzeug", failing on every single
+# launch: werkzeug's own BaseWSGIServer.__init__ (werkzeug/serving.py) unconditionally does
+# f"Werkzeug/{importlib.metadata.version('werkzeug')}" to build its HTTP Server header, every
+# time a server starts - not a rare code path, the very first thing run.start_server() does.
+# PyInstaller bundles a package's *code* once something imports it, but never its .dist-info
+# metadata folder unless told to separately - copy_metadata is that separate step. Pinpointed by
+# directly tracing the actual importlib.metadata call with a real traceback (werkzeug/serving.py
+# line 813), not inferred from the error text. Covering Flask's other direct dependencies too,
+# not just werkzeug alone: the same self-referential-version-check pattern is common enough in
+# this ecosystem that waiting for each one to surface as its own bug report isn't worth it.
+for _pkg in ("werkzeug", "flask", "jinja2", "click", "itsdangerous", "markupsafe", "blinker"):
+    datas += copy_metadata(_pkg)
 
 a = Analysis(
     [str(PROJECT_ROOT / "desktop_app.py")],
