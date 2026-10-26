@@ -66,21 +66,25 @@ if not (PROJECT_ROOT / "run.py").exists():
 # applies pyinstaller-hooks-contrib's existing, already-tuned hooks for each library - no manual
 # override needed.
 #
-# kaggle/kagglehub are the one real exception: v1.4's "no module named 'kaggle'" bug happened
-# because an earlier pass concluded they were never imported anywhere, based on a grep for
-# top-level `import kaggle` statements only - which missed that dataset/kaggle_search.py imports
-# both of them *inside* functions (`from kaggle import KaggleApi` inside search_kaggle_datasets,
-# `import kagglehub` inside download_kaggle_dataset), invisible to that grep's anchoring and,
-# worse, invisible to PyInstaller's own static analysis too, which only sees imports reachable
-# from a script it's actually told to analyze - a function-local import it never calls into
-# doesn't count. Explicitly naming them as hiddenimports is what makes PyInstaller analyze them
-# at all, the same reason "main" needs to be named below.
+# kaggle/kagglehub/anthropic are the real exceptions: v1.4's "no module named 'kaggle'" bug
+# happened because an earlier pass concluded they were never imported anywhere, based on a grep
+# for top-level `import kaggle` statements only - which missed that dataset/kaggle_search.py
+# imports both of them *inside* functions (`from kaggle import KaggleApi` inside
+# search_kaggle_datasets, `import kagglehub` inside download_kaggle_dataset). Confirmed this is
+# a real, general PyInstaller limitation, not something specific to kaggle: collect_submodules
+# lists a module as something to bundle, but does not retroactively make PyInstaller's analyzer
+# trace a FUNCTION-LOCAL import statement inside that module the way it would a module-level one
+# - analysis/llm_planner.py's `import anthropic` (also function-local, same reason - see its own
+# docstring) was verified MISSING from a real build before this fix was added, the same way
+# kaggle was. Explicitly naming all three as hiddenimports is what makes PyInstaller analyze
+# them at all, the same reason "main" needs to be named below.
 hiddenimports = (
     ["main"]
     + collect_submodules("analysis")
     + collect_submodules("dataset")
     + collect_submodules("kaggle")
     + collect_submodules("kagglehub")
+    + collect_submodules("anthropic")
 )
 
 datas = [
